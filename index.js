@@ -93,6 +93,7 @@ evilBabyImage.src = "images/evilBaby.png";
 // POINTS
 let pointsEarned = 0;
 let deathPoint = 0;
+let stopGame = 0;
 let died = false;
 
 /*** Game Objects ***/
@@ -112,7 +113,7 @@ let football = {
 
 // Golden Ball
 let goldenball = {
-    x: undefined,           // undefined, because they will be available after certain point has been reached
+    x: undefined,       // undefined, because they will be available after certain point has been reached
     y: undefined
 };
 
@@ -183,7 +184,7 @@ let down = false;
 let counter = 0; // used to slow animation down
 
 // Countdown Timer
-let time = 999;
+let time = 30;
 
 function countdownTimer() {
     if (time > 0) {
@@ -208,12 +209,11 @@ addEventListener("keyup", function (e) {
 }, false);
 
 
-// Reset the game when the player catches a monster
+// Reset the game when the player catches a football or goldenball
 let reset = function () {
     if (died == true) {
         soundEfx.src = soundGameOver;
         soundEfx.play();
-        
     }
     else {
         placeItem(hero);
@@ -240,7 +240,7 @@ let reset = function () {
             placeItem(goldenball);
         }
 
-        if (pointsEarned >= 1) {
+        if (pointsEarned >= 11) {
             alert("You Won!");
             // change sound effect and play it
             soundEfx.src = soundWin;
@@ -322,12 +322,12 @@ let update = function (modifier) {
 
     // Finding Football Event
     if (
-        hero.x <= (football.x + 55)      // 32 = width of character (32 x 32 pixels) from right to monster
-        && football.x <= (hero.x + 95)   // hero coming from left to monster
-        && hero.y <= (football.y + 20)   // hero from bottom to top
-        && football.y <= (hero.y + 100)  // hero from top to bottom
+        hero.x <= (football.x + 55)      // hero coming from right to football
+        && football.x <= (hero.x + 95)   // from left to football
+        && hero.y <= (football.y + 20)   // from bottom to top
+        && football.y <= (hero.y + 100)  // from top to bottom
     ) {
-        ++pointsEarned;       // keep track of our “score”
+        ++pointsEarned;       // gain 1 point everytime football is caught
         // make sound when score points
         soundEfx.src = soundCaught;
         soundEfx.play();
@@ -337,12 +337,12 @@ let update = function (modifier) {
 
     // Finding Golden Ball Event
     if (
-        hero.x <= (goldenball.x + 55)      // 32 = width of character (32 x 32 pixels) from right to monster
-        && goldenball.x <= (hero.x + 95)   // hero coming from left to monster
-        && hero.y <= (goldenball.y + 20)   // hero from bottom to top
-        && goldenball.y <= (hero.y + 100)  // hero from top to bottom
+        hero.x <= (goldenball.x + 55)      // hero coming from right to goldenball
+        && goldenball.x <= (hero.x + 95)   // from left to goldenball
+        && hero.y <= (goldenball.y + 20)   // from bottom to top
+        && goldenball.y <= (hero.y + 100)  // from top to bottom
     ) {
-        pointsEarned += 3;       // keep track of our “score”
+        pointsEarned += 3;       // gain 3 points when goldenball is caught
         // make sound when score points
         soundEfx.src = soundGolden;
         soundEfx.play();
@@ -387,7 +387,7 @@ let update = function (modifier) {
 
     // Touching Wall Event
     if (
-        ( hero.x <= (wall1.x + 78)        // from right
+        ( hero.x <= (wall1.x + 78)      // from right
         && wall1.x <= (hero.x + 78)     // from left
         && hero.y <= (wall1.y + 70)     // from bottom
         && wall1.y <= (hero.y + 90) )   // from top
@@ -408,9 +408,9 @@ let update = function (modifier) {
         && wall4.y <= (hero.y + 90) ) 
 
     ) {
-        hero.speed = hero.speed * -1;
+        hero.speed = hero.speed * -1;       // blocks character from moving, when wall is hit
     } else {
-        hero.speed = 250;
+        hero.speed = 250;                   // character is able to move when not facing the wall
     }
 
 
@@ -474,14 +474,11 @@ let gameOver = function () {
         soundEfx.play();
     }
     else {
-        alert("GameOver: You were out of time!");   // player out of time
+        alert("Game Over: You were out of time!");   // player out of time
         soundEfx.src = soundGameOver;
         soundEfx.play();
     }
     deathPoint = 1;
-    // time = 999;
-    // pointsEarned = 0;
-    // reset();
 };
 
 
@@ -501,7 +498,7 @@ let render = function () {
         ctx.drawImage(sideBorderImage, 950, 0); // RIGHT side
     }
 
-    // CHARACTERS
+    /*** CHARACTERS ***/
     // Evil Baby
     if (evilBabyReady) {
         ctx.drawImage(evilBabyImage, evil1.x, evil1.y);
@@ -552,10 +549,12 @@ let render = function () {
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     // when player wins
-    if (pointsEarned >= 1) {
+    if (pointsEarned >= 11) {
+        stopGame = 1;
         ctx.fillText("YOU WON!", 450, 960); // 32 = tree border size
     }
     if (deathPoint === 1 || time === 0){
+        stopGame = 1;   // stops game when either lose or win
         ctx.fillText("You Lost...", 450, 960);
     }
     else {
@@ -563,9 +562,6 @@ let render = function () {
         ctx.fillText("Time: " + time, 450, 12);
     }
 };
-
-
-
 
 // The main game loop
 let main = function () {
@@ -575,10 +571,12 @@ let main = function () {
     render();
     then = now;
 
-    if (pointsEarned < 1) {
+    // game stops if either win or lose ("stopGame" value changes to 1)
+    if (stopGame < 1) { 
         //  Request to do this again ASAP
         requestAnimationFrame(main);
     }
+
 };
 
 
@@ -590,5 +588,5 @@ let main = function () {
 
 // Let's play this game!
 let then = Date.now();
-reset();    // position hero & monster on the board before game start
+reset();    // position hero & football & opponents on the board before game start
 main();  // call the main game loop.
